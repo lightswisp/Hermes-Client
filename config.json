@@ -1,0 +1,5 @@
+{
+	"server": "sdnet.lol",
+	"default_interface": "wlp2s0",
+	"max_buffer": 65535
+}
