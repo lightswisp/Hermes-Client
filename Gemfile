@@ -4,5 +4,5 @@ source 'https://rubygems.org'
 
 gem 'colorize'
 gem 'ferrum'
-gem 'websocket-eventmachine-server'
 gem 'rb_tuntap'
+gem 'websocket-eventmachine-server'
