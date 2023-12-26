@@ -2,7 +2,7 @@
 
 require_relative 'includes'
 LOGGER = Logger.new(STDOUT)
-CONFIG_PATH = "/etc/hermes/config.json"
+CONFIG_PATH = '/etc/hermes/config.json'
 
 unless Process.uid.zero?
   LOGGER.warn('You must run it with root privileges!'.yellow.bold)
@@ -10,15 +10,15 @@ unless Process.uid.zero?
 end
 
 begin
-	unless File.exist?(CONFIG_PATH)
-		Dir.mkdir("/etc/hermes") unless Dir.exist?("/etc/hermes")
-		f = File.new(CONFIG_PATH, "w+") 
-		f.write("{}")
-		LOGGER.warn("New config is created at #{CONFIG_PATH}".yellow.bold)
-	end
+  unless File.exist?(CONFIG_PATH)
+    Dir.mkdir('/etc/hermes') unless Dir.exist?('/etc/hermes')
+    f = File.new(CONFIG_PATH, 'w+')
+    f.write('{}')
+    LOGGER.warn("New config is created at #{CONFIG_PATH}".yellow.bold)
+  end
   CONFIG = JSON.parse(File.read(CONFIG_PATH))
 rescue Errno::ENOENT
-  LOGGER.warn("config.json not found!".yellow.bold)
+  LOGGER.warn('config.json not found!'.yellow.bold)
   exit
 rescue JSON::ParserError
   LOGGER.warn("Couldn't parse the config!".yellow.bold)
@@ -29,8 +29,8 @@ REQUIRED_KEYS = %w[server max_buffer]
 CONFIG_DIFF = (REQUIRED_KEYS - CONFIG.keys)
 
 unless CONFIG_DIFF.empty?
-	LOGGER.warn("#{CONFIG_DIFF.join(', ')} are missing!".yellow.bold) 
-	exit
+  LOGGER.warn("#{CONFIG_DIFF.join(', ')} are missing!".yellow.bold)
+  exit
 end
 
 if CONFIG.include?('default_interface')

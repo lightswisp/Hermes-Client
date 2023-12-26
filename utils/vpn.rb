@@ -57,19 +57,21 @@ class VPN
   end
 
   def restore_routes
-    IO.popen(["ip", "route", "del", SERVER_ADDRESS]).close
+    IO.popen(['ip', 'route', 'del', SERVER_ADDRESS]).close
     puts("ip route del #{SERVER_ADDRESS}")
-    IO.popen(["ip", "route", "add", "default", "via", DEV_MAIN_INTERFACE_DEFAULT_ROUTE, "dev", DEV_MAIN_INTERFACE]).close
+    IO.popen(['ip', 'route', 'add', 'default', 'via', DEV_MAIN_INTERFACE_DEFAULT_ROUTE, 'dev',
+              DEV_MAIN_INTERFACE]).close
     puts("ip route add default via #{DEV_MAIN_INTERFACE_DEFAULT_ROUTE} dev #{DEV_MAIN_INTERFACE}")
   end
 
   def setup_routes(dev_addr)
     LOGGER.info('Setting up routes')
-    IO.popen(["ip", "route", "add", SERVER_ADDRESS, "via", DEV_MAIN_INTERFACE_DEFAULT_ROUTE, "dev", DEV_MAIN_INTERFACE]).close
+    IO.popen(['ip', 'route', 'add', SERVER_ADDRESS, 'via', DEV_MAIN_INTERFACE_DEFAULT_ROUTE, 'dev',
+              DEV_MAIN_INTERFACE]).close
     LOGGER.info("ip route add #{SERVER_ADDRESS} via #{DEV_MAIN_INTERFACE_DEFAULT_ROUTE} dev #{DEV_MAIN_INTERFACE}")
-    IO.popen(["ip", "route", "del", "default"]).close
+    IO.popen(%w[ip route del default]).close
     LOGGER.info('ip route del default')
-    IO.popen(["ip", "route", "add", "default", "via", dev_addr, "dev", DEV_NAME]).close
+    IO.popen(['ip', 'route', 'add', 'default', 'via', dev_addr, 'dev', DEV_NAME]).close
     LOGGER.info("ip route add default via #{dev_addr} dev #{DEV_NAME}")
   end
 
@@ -111,4 +113,3 @@ class VPN
     end
   end
 end
-
