@@ -55,7 +55,7 @@ vpn = nil
 trap 'SIGINT' do
   puts('Closing the browser...')
   if ws_client && vpn
-    vpn.send("#{Conn::CLOSE}/#{Conn::UUID}")
+    vpn.send(Conn::CLOSE)
     ws_client.close
     vpn.disconnect
   end
