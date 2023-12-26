@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+ruby /opt/hermes/hermes

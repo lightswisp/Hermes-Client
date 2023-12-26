@@ -1,5 +1,8 @@
+#!/usr/bin/ruby
+
 require_relative 'includes'
 LOGGER = Logger.new(STDOUT)
+CONFIG_PATH = "/etc/hermes/config.json"
 
 unless Process.uid.zero?
   LOGGER.warn('You must run it with root privileges!'.yellow.bold)
@@ -7,9 +10,15 @@ unless Process.uid.zero?
 end
 
 begin
-  CONFIG = JSON.parse(File.read('config.json'))
+	unless File.exist?(CONFIG_PATH)
+		Dir.mkdir("/etc/hermes") unless Dir.exist?("/etc/hermes")
+		f = File.new(CONFIG_PATH, "w+") 
+		f.write("{}")
+		LOGGER.warn("New config is created at #{CONFIG_PATH}".yellow.bold)
+	end
+  CONFIG = JSON.parse(File.read(CONFIG_PATH))
 rescue Errno::ENOENT
-  LOGGER.warn('config.json not found!'.yellow.bold)
+  LOGGER.warn("config.json not found!".yellow.bold)
   exit
 rescue JSON::ParserError
   LOGGER.warn("Couldn't parse the config!".yellow.bold)
@@ -18,7 +27,11 @@ end
 
 REQUIRED_KEYS = %w[server max_buffer]
 CONFIG_DIFF = (REQUIRED_KEYS - CONFIG.keys)
-LOGGER.warn("#{CONFIG_DIFF.join(', ')} are missing!".yellow.bold) unless CONFIG_DIFF.empty?
+
+unless CONFIG_DIFF.empty?
+	LOGGER.warn("#{CONFIG_DIFF.join(', ')} are missing!".yellow.bold) 
+	exit
+end
 
 if CONFIG.include?('default_interface')
   DEV_MAIN_INTERFACE = CONFIG['default_interface']
@@ -39,7 +52,7 @@ else
       puts "#{i.name} => #{j.to_s.bold.yellow}"
     end
   end
-  DEV_MAIN_INTERFACE = interfaces[user_choice]
+  DEV_MAIN_INTERFACE = interfaces[user_choice].name
 end
 
 SERVER_HOSTNAME = CONFIG['server']

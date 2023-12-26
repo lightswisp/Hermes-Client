@@ -1,0 +1,6 @@
+Package: hermes
+Version: 0.1
+Depends: ruby-full
+Maintainer: lightswisp
+Architecture: all
+Description: Hermes Client
