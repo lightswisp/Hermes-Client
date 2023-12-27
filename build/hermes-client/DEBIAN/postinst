@@ -2,5 +2,3 @@ sudo gem install colorize
 sudo gem install ferrum
 sudo gem install rb_tuntap
 sudo gem install websocket-eventmachine-server
-
-
