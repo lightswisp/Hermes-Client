@@ -11,7 +11,7 @@ end
 
 begin
   unless File.exist?(CONFIG_PATH)
-    Dir.mkdir('/etc/hermes') unless Dir.exist('/etc/hermes')
+    Dir.mkdir('/etc/hermes') unless Dir.exist?('/etc/hermes')
     f = File.new(CONFIG_PATH, 'w+')
     f.write('{}')
     LOGGER.warn("New config is created at #{CONFIG_PATH}".yellow.bold)
