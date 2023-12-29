@@ -5,6 +5,7 @@ class VPN
     @tun = nil
     @vpn_server_ip = nil
     @addr = nil
+    @default_dns = File.read("/etc/resolv.conf")
   end
 
   def send(data)
@@ -40,6 +41,14 @@ class VPN
         end
       end
     end
+  end
+
+  def setup_dns(dns)
+		File.write("/etc/resolv.conf", "nameserver #{dns}")
+  end
+
+  def restore_dns()
+		File.write("/etc/resolv.conf", @default_dns)
   end
 
   def setup_tun(dev_addr, dev_netmask)
@@ -82,13 +91,14 @@ class VPN
       break if @addr
     end
 
-    dev_addr, dev_netmask, public_ip = @addr.split('-')
-    [dev_addr, dev_netmask, public_ip]
+    dev_addr, dev_netmask, public_ip, dns = @addr.split('-')
+    [dev_addr, dev_netmask, public_ip, dns]
   end
 
   def init
-    dev_addr, dev_netmask, public_ip = lease_address
+    dev_addr, dev_netmask, public_ip, dns = lease_address
     @vpn_server_ip = public_ip
+    setup_dns(dns)
     @tun = setup_tun(dev_addr, dev_netmask)
     setup_routes(dev_addr)
     send(Conn::DONE)
@@ -100,8 +110,11 @@ class VPN
       @tun.down
       @tun.close
     end
-    restore_routes if @tun && @tun.closed?
-    puts('Disconnected')
+    if @tun && @tun.closed?
+			restore_routes()
+			restore_dns()
+			puts('Disconnected')
+    end
   end
 
   def handle_requests
