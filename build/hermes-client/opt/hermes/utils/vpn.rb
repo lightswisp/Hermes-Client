@@ -44,10 +44,12 @@ class VPN
   end
 
   def setup_dns(dns)
+  	LOGGER.info("Setting dns to #{dns}")
 		File.write("/etc/resolv.conf", "nameserver #{dns}")
   end
 
   def restore_dns()
+  	puts "Dns settings are restored."
 		File.write("/etc/resolv.conf", @default_dns)
   end
 
