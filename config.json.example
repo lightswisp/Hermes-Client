@@ -1,0 +1,5 @@
+{
+	"server": "example.com",
+	"default_interface": "wlan0",
+	"max_buffer": 65535
+}
