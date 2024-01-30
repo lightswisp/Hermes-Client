@@ -1,7 +1,7 @@
 require_relative 'tun/tun'
 
 class VPNLinux
-  def initialize(ws_client, logger, server_address, max_buffer, default_route, dev_main_interface, dev_name="tun0")
+  def initialize(ws_client, logger, server_address, max_buffer, default_route, dev_main_interface, dev_name = 'tun0')
     @ws_client = ws_client
     @logger = logger
     @server_address = server_address
@@ -9,11 +9,11 @@ class VPNLinux
     @default_route = default_route
     @dev_main_interface = dev_main_interface
     @dev_name = dev_name
-    @ws_pipe   = nil
+    @ws_pipe = nil
     @tun = nil
     @vpn_server_ip = nil
     @addr = nil
-    @default_dns = File.read("/etc/resolv.conf")
+    @default_dns = File.read('/etc/resolv.conf')
   end
 
   def send(data)
@@ -52,27 +52,26 @@ class VPNLinux
   end
 
   def setup_dns(dns)
-  	@logger.info("Setting dns to #{dns}")
-		File.write("/etc/resolv.conf", "nameserver #{dns}")
+    @logger.info("Setting dns to #{dns}")
+    File.write('/etc/resolv.conf', "nameserver #{dns}")
   end
 
-  def restore_dns()
-  	puts "Dns settings are restored."
-		File.write("/etc/resolv.conf", @default_dns)
+  def restore_dns
+    puts 'Dns settings are restored.'
+    File.write('/etc/resolv.conf', @default_dns)
   end
 
   def setup_tun(dev_addr, dev_netmask)
     @logger.info("Opening tun device as #{@dev_name}")
 
     tun = RubyTun::TunDevice.new(@dev_name)
-	  tun.open
-	  tun.init
-	  @logger.info("Assigning ip #{dev_addr} to device")
-	  tun.set_addr(dev_addr)
-	  tun.set_netmask(dev_netmask)
-	  tun.up
-	  return tun.tun
-
+    tun.open
+    tun.init
+    @logger.info("Assigning ip #{dev_addr} to device")
+    tun.set_addr(dev_addr)
+    tun.set_netmask(dev_netmask)
+    tun.up
+    tun.tun
   end
 
   def restore_routes
@@ -106,9 +105,9 @@ class VPNLinux
   end
 
   def init
-  	ws_pipe_init 			# initialize the pipe between the browser and ruby
-  	@ws_client.ws_init			# Connect via WebSockets to the remote server
-		sleep 2
+    ws_pipe_init 			# initialize the pipe between the browser and ruby
+    @ws_client.ws_init			# Connect via WebSockets to the remote server
+    sleep 2
     dev_addr, dev_netmask, public_ip, dns = lease_address
     @vpn_server_ip = public_ip
     setup_dns(dns)
@@ -119,22 +118,20 @@ class VPNLinux
   end
 
   def disconnect
-  		send(Conn::CLOSE)
-			@tun.close
-			restore_routes()
-			restore_dns()
-			puts('Disconnected')
+    send(Conn::CLOSE)
+    @tun.close
+    restore_routes
+    restore_dns
+    puts('Disconnected')
   end
 
   def handle_requests
     Thread.new do
       loop do
-      	begin 
-	        buf = @tun.to_io.sysread(@max_buffer) unless @tun.closed?
-	        send([buf].pack('m0'))
-        rescue IOError
-					break
-        end
+        buf = @tun.to_io.sysread(@max_buffer) unless @tun.closed?
+        send([buf].pack('m0'))
+      rescue IOError
+        break
       end
     end
   end

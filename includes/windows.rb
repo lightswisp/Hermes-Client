@@ -1,4 +1,3 @@
-
 require_relative 'common'
 require_relative '../src/windows/wintun/wintun'
 require_relative '../src/windows/vpn'

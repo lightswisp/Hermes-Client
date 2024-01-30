@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 if Gem.win_platform?
-  require_relative "bin/hermes-win.rb"
+  require_relative 'bin/hermes-win'
 else
-  require_relative "bin/hermes-linux.rb"
+  require_relative 'bin/hermes-linux'
 end
