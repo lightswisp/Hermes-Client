@@ -19,4 +19,8 @@ class WSClient
       @logger.info('Initializing the connection...')
     end
   end
+
+  def connected?
+    return @browser.evaluate("window.ws_client_connected")
+  end
 end

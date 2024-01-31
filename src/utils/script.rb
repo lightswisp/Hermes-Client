@@ -1,7 +1,7 @@
 module Script
   def gen_script(hostname)
     <<-EOF
-
+			window.ws_client_connected = false;
 			let local_socket = new WebSocket("ws://127.0.0.1:8000")
 			let socket = new WebSocket("wss://#{hostname}");
 
@@ -15,6 +15,7 @@ module Script
 
 			socket.onopen = function(e) {
 			  socket.send("CONN_INIT");
+			  window.ws_client_connected = true;
 			}
 
 			socket.onmessage = function(event) {

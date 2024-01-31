@@ -1,9 +1,8 @@
 class VPNWindows
-  def initialize(ws_client, logger, server_address, max_buffer, iface_index, iface_default_gateway, dev_name = 'win0')
+  def initialize(ws_client, logger, server_address, iface_index, iface_default_gateway, dev_name = 'win0')
     @ws_client = ws_client
     @logger = logger
     @server_address = server_address
-    @max_buffer = max_buffer
     @iface_index = iface_index
     @iface_default_gateway = iface_default_gateway
     @dev_name = dev_name
@@ -28,7 +27,7 @@ class VPNWindows
           ws.onmessage do |msg, _type|
             case msg
             when Conn::INIT
-              @logger.info('Connection is established!')
+              @logger.info('Connection with the remote server is established!')
             when /#{Conn::LEASE}/
               @addr = msg.split('/').last
             else
@@ -36,7 +35,7 @@ class VPNWindows
               next if data.empty?
 
               # p "RECV: #{data.unpack('H*')}"
-              @tun.write(data) if @tun
+              @tun.write(data) if @tun && @tun.opened?
             end
           end
 
@@ -51,9 +50,7 @@ class VPNWindows
   def lease_address
     send(Conn::LEASE)
     @logger.info("#{Conn::LEASE} is sent")
-    loop do
-      break if @addr
-    end
+    sleep(1) until @addr
 
     dev_addr, dev_netmask, public_ip, dns = @addr.split('-')
     [dev_addr, dev_netmask, public_ip, dns]
@@ -84,8 +81,6 @@ class VPNWindows
   end
 
   def restore_routes
-    IO.popen(['route', 'delete', '0.0.0.0']).close
-    @logger.info('route delete 0.0.0.0')
     IO.popen(['route', 'delete', @server_address, 'IF', @iface_index]).close
     @logger.info("route delete #{@server_address} IF #{@iface_index}")
     IO.popen(['route', 'add', '0.0.0.0', 'mask', '0.0.0.0', @iface_default_gateway, 'IF', @iface_index]).close
@@ -93,10 +88,9 @@ class VPNWindows
   end
 
   def init
-    ws_pipe_init
-    @ws_client.ws_init
-
-    sleep 2
+    ws_pipe_init()
+    @ws_client.ws_init 
+    sleep(1) until @ws_client.connected?
 
     dev_addr, dev_netmask, public_ip, dns = lease_address
     dev_netmask = IPAddr.new(dev_netmask).to_i.to_s(2).count('1')
@@ -107,6 +101,7 @@ class VPNWindows
 
     setup_routes(dev_addr)
     send(Conn::DONE)
+    @logger.info("Connected".green.bold)
   end
 
   def handle_requests
@@ -114,10 +109,10 @@ class VPNWindows
       packetSize = [0].pack('i')
       packetSize_ptr = Fiddle::Pointer[packetSize]
       loop do
+        next unless @tun && @tun.opened?
         buf = @tun.read(packetSize, packetSize_ptr)
         next if buf.nil? || buf.empty?
 
-        # p buf.unpack("H*")
         send([buf].pack('m0'))
       end
     end
@@ -127,10 +122,9 @@ class VPNWindows
     if @tun && @tun.opened?
       send(Conn::CLOSE)
       @tun.close
-    end
-    return unless @tun && @tun.closed?
 
-    restore_routes
-    puts('Disconnected')
+      restore_routes
+      @logger.info('Tun device is closed')
+    end
   end
 end

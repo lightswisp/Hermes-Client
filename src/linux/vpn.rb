@@ -57,7 +57,7 @@ class VPNLinux
   end
 
   def restore_dns
-    puts 'Dns settings are restored.'
+    @logger.info('Dns settings are restored.')
     File.write('/etc/resolv.conf', @default_dns)
   end
 
@@ -76,10 +76,10 @@ class VPNLinux
 
   def restore_routes
     IO.popen(['ip', 'route', 'del', @server_address]).close
-    puts("ip route del #{@server_address}")
+    @logger.info("ip route del #{@server_address}")
     IO.popen(['ip', 'route', 'add', 'default', 'via', @default_route, 'dev',
               @dev_main_interface]).close
-    puts("ip route add default via #{@default_route} dev #{@dev_main_interface}")
+    @logger.info("ip route add default via #{@default_route} dev #{@dev_main_interface}")
   end
 
   def setup_routes(dev_addr)
@@ -96,33 +96,35 @@ class VPNLinux
   def lease_address
     send(Conn::LEASE)
     @logger.info("#{Conn::LEASE} is send")
-    loop do
-      break if @addr
-    end
+    sleep(1) until @addr
 
     dev_addr, dev_netmask, public_ip, dns = @addr.split('-')
     [dev_addr, dev_netmask, public_ip, dns]
   end
 
   def init
-    ws_pipe_init 			# initialize the pipe between the browser and ruby
-    @ws_client.ws_init			# Connect via WebSockets to the remote server
-    sleep 2
+    ws_pipe_init() 			# initialize the pipe between the browser and ruby
+    @ws_client.ws_init			# Connect via WebSockets to the remote server_address
+		sleep(1) until @ws_client.connected?
+    
     dev_addr, dev_netmask, public_ip, dns = lease_address
     @vpn_server_ip = public_ip
     setup_dns(dns)
     @tun = setup_tun(dev_addr, dev_netmask)
     setup_routes(dev_addr)
     send(Conn::DONE)
-    @logger.info("init is finished, sending #{Conn::DONE}")
+    @logger.info("Connected".green.bold)
   end
 
   def disconnect
-    send(Conn::CLOSE)
-    @tun.close
-    restore_routes
-    restore_dns
-    puts('Disconnected')
+  	if @tun && !@tun.closed?
+	    send(Conn::CLOSE)
+	    @tun.close
+	    
+	    restore_routes
+	    restore_dns
+	    @logger.info('Tun device is closed')
+    end
   end
 
   def handle_requests

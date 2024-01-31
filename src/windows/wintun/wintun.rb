@@ -1,14 +1,18 @@
 require 'fiddle/import'
 require 'fiddle/types'
 
-RubyInstaller::Runtime.add_dll_directory(File.expand_path('lib/windows', Dir.pwd))
+# module Kernel32 
+#   extend Fiddle::Importer
+#   #include Fiddle::Win32Types
+#   dlload 'kernel32.dll'
+#   extern 'void* LoadLibraryExW(const char* lpLibFileName, void* hFile, unsigned long dwFlags)'
+# end
 
 module WinAPI
   extend Fiddle::Importer
-  dlload 'kernel32.dll'
-  include Fiddle::Win32Types
-  extern 'void* LoadLibraryA(LPCSTR)'
+  
   dlload 'Iphlpapi.dll'
+  include Fiddle::Win32Types
   extern 'void InitializeUnicastIpAddressEntry(void* AddressRow)'
   extern 'int CreateUnicastIpAddressEntry(void* Row)'
   extern 'unsigned long GetAdaptersInfo(void* AdapterInfo, void* SizePointer)'
@@ -182,6 +186,7 @@ module WinStructs
 end
 
 module WinTun
+  RubyInstaller::Runtime.add_dll_directory(File.expand_path('lib/windows', Dir.pwd))
   extend Fiddle::Importer
   if RUBY_PLATFORM.include?('x64') # if 64 bit
     dlload 'wintun.dll'
@@ -275,17 +280,13 @@ module WinTun
       @opened
     end
 
-    def closed?
-      !@opened
-    end
-
     def read(packetSize, packetSize_ptr)
-      packet = WinTun.WintunReceivePacket(@session, packetSize_ptr)
-      return if packet.null?
+        packet = WinTun.WintunReceivePacket(@session, packetSize_ptr)
+        return if packet.null?
 
-      size = packetSize.unpack1('i')
-      WinTun.WintunReleaseReceivePacket(@session, packet)
-      packet[0, size]
+        size = packetSize.unpack1('i')
+        WinTun.WintunReleaseReceivePacket(@session, packet)
+        packet[0, size]
     end
 
     def write(data)
@@ -304,29 +305,3 @@ module WinTun
     end
   end
 end
-
-# have_quit = false
-
-# trap "SIGINT" do
-#     puts "Exiting"
-#     have_quit = true
-#     WinTun.WintunCloseAdapter(adapter)
-#     exit()
-# end
-
-# Thread.new do
-#     packetSize = [0].pack("i")
-#     packetSize_ptr = Fiddle::Pointer[packetSize]
-#     while !have_quit
-
-#         packet = WinTun.WintunReceivePacket(session, packetSize_ptr)
-#         unless packet.null?
-#             size = packetSize.unpack("i").first
-#             p packet[0, size]
-#             WinTun.WintunReleaseReceivePacket(session, packet)
-#         end
-
-#     end
-# end
-
-# sleep

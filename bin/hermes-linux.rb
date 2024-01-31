@@ -1,4 +1,7 @@
 require_relative '../includes/linux'
+
+running = true
+
 LOGGER = Logger.new(STDOUT)
 LOGGER.info("Starting on #{RUBY_PLATFORM}")
 CONFIG_PATH = '/etc/hermes'
@@ -26,11 +29,21 @@ rescue JSON::ParserError
   exit
 end
 
-REQUIRED_KEYS = %w[server max_buffer]
+REQUIRED_KEYS = %w[server max_buffer check_server]
 CONFIG_DIFF = (REQUIRED_KEYS - CONFIG.keys)
 
+server_hostname = CONFIG['server']
+check_server		  = CONFIG['check_server']
+server_address = Resolv.getaddress(server_hostname)
+max_buffer = CONFIG['max_buffer']
+script = Script.gen_script(server_hostname)
+default_route = `ip route show default`.strip.split[2]
+ws_client = nil
+vpn = nil
+
 unless CONFIG_DIFF.empty?
-  LOGGER.warn("#{CONFIG_DIFF.join(', ')} are missing!".yellow.bold)
+   LOGGER.warn("#{CONFIG_DIFF.join(', ')} configuration(s) is/are missing!".yellow.bold)
+   LOGGER.warn("Please check your config file: #{CONFIG_NAME}".yellow.bold)
   exit
 end
 
@@ -40,7 +53,7 @@ else
   # selecting the default iface
   lan_ip = # i should change static 8.8.8.8 later and make it configurable
     UDPSocket.open do |s|
-      s.connect('8.8.8.8', 1)
+      s.connect(check_server, 1)
       s.addr.last
     end
   interfaces = Socket.getifaddrs
@@ -59,22 +72,18 @@ else
   dev_main_interface = interface.name
 end
 
-server_hostname = CONFIG['server']
-server_address = Resolv.getaddress(server_hostname)
-max_buffer = CONFIG['max_buffer']
-script = Script.gen_script(server_hostname)
-dev_name = 'tun0'
-default_route = `ip route show default`.strip.split[2]
-
-ws_client = nil
-vpn = nil
 
 trap 'SIGINT' do
-  puts('Closing the browser...')
-  vpn.disconnect if vpn
-  ws_client.close if ws_client
-  sleep 1
-  exit
+	if running
+		Thread.new do
+		  LOGGER.info("Stopping...".yellow.bold)
+		  vpn.disconnect if vpn
+		  ws_client.close if ws_client
+			running = false
+		end
+		sleep 1
+		exit
+	end
 end
 
 ws_client = WSClient.new(script, LOGGER)
@@ -85,8 +94,7 @@ vpn = VPNLinux.new(
   server_address,
   max_buffer,
   default_route,
-  dev_main_interface,
-  dev_name
+  dev_main_interface
 )
 
 vpn.init	# get address, init tun, etc...

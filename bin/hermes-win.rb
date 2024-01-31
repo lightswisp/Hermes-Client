@@ -1,5 +1,7 @@
 require_relative '../includes/windows'
 
+running = true
+
 LOGGER = Logger.new(STDOUT)
 LOGGER.info("Starting on #{RUBY_PLATFORM}")
 
@@ -23,16 +25,24 @@ rescue JSON::ParserError
   exit
 end
 
-REQUIRED_KEYS = %w[server max_buffer]
+REQUIRED_KEYS = %w[server check_server]
 CONFIG_DIFF = (REQUIRED_KEYS - CONFIG.keys)
 
 unless CONFIG_DIFF.empty?
-  LOGGER.warn("#{CONFIG_DIFF.join(', ')} are missing!".yellow.bold)
+  LOGGER.warn("#{CONFIG_DIFF.join(', ')} configuration(s) is/are missing!".yellow.bold)
+  LOGGER.warn("Please check your config file: #{CONFIG_NAME}".yellow.bold)
   exit
 end
 
+server_hostname = CONFIG['server']
+dns_server      = CONFIG['check_server']
+server_address = Resolv.getaddress(server_hostname)
+script = Script.gen_script(server_hostname)
+ws_client = nil
+vpn = nil
+
 lan_ip = UDPSocket.open do |s|
-  s.connect('8.8.8.8', 1)
+  s.connect(dns_server, 1)
   s.addr.last
 end
 adapter_info = WinStructs::IP_ADAPTER_INFO.malloc
@@ -70,21 +80,17 @@ if WinAPI.GetAdaptersInfo(new_adapter_info, Fiddle::Pointer[buflen]) == 0
   end
 end
 
-server_hostname = CONFIG['server']
-server_address = Resolv.getaddress(server_hostname)
-max_buffer = CONFIG['max_buffer']
-script = Script.gen_script(server_hostname)
-ws_client = nil
-vpn = nil
-
 trap 'SIGINT' do
-  puts('Closing the browser...')
-  Thread.new do
-    vpn.disconnect if vpn
-    ws_client.close if ws_client
+  if running
+    Thread.new do
+        LOGGER.info("Stopping...".yellow.bold)
+        vpn.disconnect if vpn
+        ws_client.close if ws_client
+        running = false
+    end
+    sleep 1
+    exit
   end
-  sleep 1
-  exit
 end
 
 ws_client = WSClient.new(script, LOGGER)
@@ -92,7 +98,6 @@ vpn = VPNWindows.new(
   ws_client,
   LOGGER,
   server_address,
-  max_buffer,
   iface_index,
   iface_default_gateway
 )
