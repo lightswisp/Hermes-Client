@@ -20,8 +20,9 @@ class VPNWindows
       EM.run do
         WebSocket::EventMachine::Server.start(host: '127.0.0.1', port: 8000) do |ws|
           ws.onopen do |_c|
-            @logger.info('Websocket pipe between browser and remote server is established.')
+            @logger.info('Websocket pipe between browser and local websocket server is established.')
             @ws_pipe = ws
+            @logger.info("Trying to establish the connection with remote server...")
           end
 
           ws.onmessage do |msg, _type|
@@ -90,6 +91,7 @@ class VPNWindows
   def init
     ws_pipe_init()
     @ws_client.ws_init 
+
     sleep(1) until @ws_client.connected?
 
     dev_addr, dev_netmask, public_ip, dns = lease_address

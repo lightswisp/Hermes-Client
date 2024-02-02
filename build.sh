@@ -15,7 +15,7 @@ chmod +x build/hermes-client/usr/bin/hermes
 
 cat << EOF > build/hermes-client/DEBIAN/control 
 Package: hermes
-Version: 0.1
+Version: 0.3
 Depends: ruby-full
 Maintainer: lightswisp
 Architecture: all
@@ -25,7 +25,6 @@ EOF
 cat << EOF > build/hermes-client/DEBIAN/postinst
 sudo gem install colorize 
 sudo gem install ferrum
-sudo gem install rb_tuntap
 sudo gem install websocket-eventmachine-server
 EOF
 

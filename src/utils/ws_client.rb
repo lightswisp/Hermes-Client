@@ -16,7 +16,6 @@ class WSClient
     Thread.new do
       @browser.go_to 'about:blank'
       @browser.execute(@script)
-      @logger.info('Initializing the connection...')
     end
   end
 

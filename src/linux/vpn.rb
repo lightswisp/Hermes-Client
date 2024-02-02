@@ -25,14 +25,15 @@ class VPNLinux
       EM.run do
         WebSocket::EventMachine::Server.start(host: '127.0.0.1', port: 8000) do |ws|
           ws.onopen do |_c|
-            @logger.info('Websocket pipe between browser and remote server is established.')
+            @logger.info('Websocket pipe between browser and local websocket server is established.')
             @ws_pipe = ws
+            @logger.info("Trying to establish the connection with remote server...")
           end
 
           ws.onmessage do |msg, _type|
             case msg
             when Conn::INIT
-              @logger.info('Connection is established!')
+              @logger.info('Connection with remote server is established!')
             when /#{Conn::LEASE}/
               @addr = msg.split('/').last
             else
@@ -95,7 +96,7 @@ class VPNLinux
 
   def lease_address
     send(Conn::LEASE)
-    @logger.info("#{Conn::LEASE} is send")
+    @logger.info("#{Conn::LEASE} is sent")
     sleep(1) until @addr
 
     dev_addr, dev_netmask, public_ip, dns = @addr.split('-')
@@ -105,6 +106,7 @@ class VPNLinux
   def init
     ws_pipe_init() 			# initialize the pipe between the browser and ruby
     @ws_client.ws_init			# Connect via WebSockets to the remote server_address
+
 		sleep(1) until @ws_client.connected?
     
     dev_addr, dev_netmask, public_ip, dns = lease_address
