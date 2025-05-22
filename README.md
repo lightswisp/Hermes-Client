@@ -2,6 +2,8 @@
 # Hermes
 Client that is used for bypassing firewalls. 
 
+If you want to take a quick look at the server implementation, go here https://github.com/lightswisp/Hermes-Server
+
 ## Demo
 
 https://github.com/lightswisp/Hermes-Client/assets/48927861/12951944-5c54-45c9-b0f5-dd1f080a142f
